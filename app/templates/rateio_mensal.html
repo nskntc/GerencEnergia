@@ -1,0 +1,88 @@
+{% extends 'base.html' %}
+
+{% block title %}Rateio Mensal{% endblock %}
+
+{% block content %}
+<style>
+    .rateio-wrapper{
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+        gap: 20px;
+    }
+
+    button{
+        margin-top: 15px;
+        border: none;
+        border-radius: 10px;
+        padding: 10px 20px;
+        background-color: #4c0e0e;
+        color: #C4C4CC;
+        font-weight: 700;
+    }
+
+    #percentual-input{
+        background: transparent;
+    }
+
+    form{
+        border: 1px solid rgba(124, 124, 138, 0.5);
+        padding: 32px;
+        border-radius: 10px;
+        width: 700px;
+    }
+
+    #enviar-rateio{
+        width: 100%;
+    }
+</style>
+
+<div class="rateio-wrapper">
+    <h1>Rateio Mensal</h1>
+
+    <div class="form-wrapper">
+        <form method="post" action="{{ url_for('cliente_routes.rateio_mensal') }}">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Unidade Consumidora</th>
+                        <th>Usina</th>
+                        <th>Percentual</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for uc in ucs %}
+                        <tr>
+                            <td>{{ uc.numero }}</td>
+                            <td>{{ usinas[uc.id].nome }}</td>
+                            <td class="hidden">
+                                <input type="hidden" name="unidade_consumidora_id" value="{{ uc.id }}">
+                            </td>
+                            <td>
+                                <input id="percentual-input" type="text" name="percentual" placeholder="Percentual" required>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            <button id="enviar-rateio" type="submit">Enviar Rateio</button>
+        </form>
+    </div>
+    
+    <p>
+        <a href="{{ url_for('cliente_routes.cliente_dashboard') }}">
+            <button class="voltar-dashboard" type="button">Voltar ao Dashboard</button>
+        </a>
+    </p>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+          {% set last_message = messages[-1] %}
+          <ul>
+              <li class="{{ last_message[0] }}">{{ last_message[1] }}</li>
+          </ul>
+      {% endif %}
+    {% endwith %}
+</div>
+{% endblock %}

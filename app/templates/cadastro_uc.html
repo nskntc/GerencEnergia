@@ -1,0 +1,162 @@
+{% extends 'base.html' %}
+
+{% block title %}Admin Dashboard{% endblock %}
+
+{% block content %}
+<style>
+    .cadastro{
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-direction: column;
+        gap: 20px;
+    }
+
+    .cadastro h2{
+        margin-bottom: 20px;
+    }
+
+    form{
+        border: 1px solid rgba(124, 124, 138, 0.5);
+        padding: 32px;
+        border-radius: 10px;
+        width: 700px;
+    }
+
+    form #historico-container{
+        margin-bottom: 15px;
+    }
+
+    form .historico-item{
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 5px;
+    }
+
+    button{
+        margin-top: 15px;
+        border: none;
+        border-radius: 10px;
+        padding: 10px 20px;
+        background-color: #4c0e0e;
+        color: #C4C4CC;
+        font-weight: 700;
+    }
+
+    form .historico-item button{
+        height: 32px;
+
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        background-color: #192227;
+
+        margin-top: 5px;
+    }
+
+    form .add-mes{
+        background-color: #192227;
+
+        margin-top: -5px;
+    }
+
+    select{
+        width: 100%;
+        height: 32px;
+
+        padding-left: 16px;
+        padding-right: 16px;
+
+        font-size: 14px;
+        font-weight: 400;
+        line-height: 160%;
+        color: #C4C4CC;
+
+        background-color: #0D1D25;
+
+        border: none;
+        border-radius: 5px;
+
+        cursor: pointer;
+
+        option{
+            background-color: #192227;
+            border-radius: 5px;
+        }
+    }
+
+    select:focus{
+        border: 1px solid white;
+
+        outline: none;
+
+        transition: opacity 0.2s ease;
+    }
+</style>
+
+<div class="cadastro">
+    <h2>Cadastro de Unidade Consumidora</h2>
+    <form action="{{ url_for('admin_routes.cadastro_uc') }}" method="POST">
+        <label for="numero">Número da UC:</label>
+        <input type="text" id="numero" name="numero" required><br><br>
+    
+        <label for="endereco">Endereço da UC:</label>
+        <input type="text" id="endereco" name="endereco" required><br><br>
+    
+        <label for="cliente_id">Cliente:</label>
+        <select id="cliente_id" name="cliente_id" required>
+            {% for cliente in clientes %}
+            <option value="{{ cliente.id }}">{{ cliente.username }}</option>
+            {% endfor %}
+        </select><br><br>
+    
+        <label for="usina_id">Usina:</label>
+        <select id="usina_id" name="usina_id" required>
+            {% for usina in usinas %}
+            <option value="{{ usina.id }}">{{ usina.nome }}</option>
+            {% endfor %}
+        </select><br><br>
+    
+        <h3>Histórico de Consumo</h3>
+        <div id="historico-container">
+            <div class="historico-item">
+                <input type="date" name="data" required>
+                <input type="number" step="0.01" name="consumo" placeholder="Consumo" required>
+                <input type="number" step="0.01" name="credito" placeholder="Crédito" required>
+                <button type="button" onclick="removeMes(this)">Remover</button>
+            </div>
+        </div>
+        <button class="add-mes" type="button" onclick="addMes()">Adicionar Mês</button><br><br>
+    
+        <button type="submit">Cadastrar UC</button>
+    </form>
+    
+    <p>
+        <a href="{{ url_for('admin_routes.admin_dashboard') }}">
+            <button class="voltar-dashboard" type="button">Voltar ao Dashboard</button>
+        </a>
+    </p>
+</div>
+
+<script>
+    function addMes() {
+        const container = document.getElementById('historico-container');
+        const div = document.createElement('div');
+        div.classList.add('historico-item');
+        div.innerHTML = `
+            <input type="date" name="data" required>
+            <input type="number" step="0.01" name="consumo" placeholder="Consumo" required>
+            <input type="number" step="0.01" name="credito" placeholder="Crédito" required>
+            <button type="button" onclick="removeMes(this)">Remover</button>
+        `;
+        container.appendChild(div);
+    }
+
+    function removeMes(button) {
+        const container = document.getElementById('historico-container');
+        container.removeChild(button.parentElement);
+    }
+</script>
+{% endblock %}

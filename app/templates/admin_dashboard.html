@@ -1,0 +1,233 @@
+{% extends 'base.html' %}
+
+{% block title %}Admin Dashboard{% endblock %}
+
+{% block content %}
+<style>
+    body{
+        margin-left: 30px;
+    } 
+
+    h1{
+        margin-bottom: 20px;
+    }
+
+    h2{
+        margin-bottom: 15px;
+    }
+
+    .painel_energia{
+        margin-top: 15px;
+        margin-bottom: 15px;
+    }
+
+    .container {
+        display: flex;
+        gap: 30px;
+        overflow-x: auto; /* Adiciona a barra de rolagem horizontal */
+    }
+
+    .container::-webkit-scrollbar {
+        height: 10px; /* Altera a altura da barra de rolagem horizontal */
+    }
+
+    .container::-webkit-scrollbar-track {
+        background: transparent;
+    }
+
+    .container::-webkit-scrollbar-thumb {
+        background-color: rgb(60, 55, 55);
+        border-radius: 20px;
+        border: none;
+    }
+
+    .panel {
+        width: 500px;
+        border: 1px solid rgba(124, 124, 138, 0.5);
+        border-radius: 10px;
+        padding: 20px;
+        background-color: #000A0F;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+
+        color: #C4C4CC;
+    }
+
+    table{
+        margin-bottom: 15px;
+    }
+
+    table, th, td {
+        border: 1px solid rgba(124, 124, 138, 0.5);
+    }
+
+    .cliente{
+        margin-bottom: 10px;
+    }
+
+    .nova_uc_button{
+        margin-top: 15px;
+        border: none;
+        border-radius: 10px;
+        padding: 10px 20px;
+        background-color: #4c0e0e;
+        color: #C4C4CC;
+        font-weight: 700;
+    }
+
+    #consumoGeracaoChart{
+        width: 100%;
+        max-height: 500px;
+        border: 1px solid rgba(124, 124, 138, 0.5);
+        border-radius: 10px;
+    }
+</style>
+
+<h1>Área de Gerenciamento Backoffice</h1>
+
+<h2>Clientes e Unidades Consumidoras</h2>
+<div class="container">
+    {% for dado in dados_clientes %}
+        <div class="panel">
+            <h3 class="cliente">Cliente: {{ dado.cliente.username }}</h3>
+            <h4>Unidades Consumidoras:</h4>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Unidade Consumidora</th>
+                        <th>Endereço</th>
+                        <th>Usina</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for uc in dado.unidades_consumidoras %}
+                        <tr>
+                            <td>{{ uc.numero }}</td>
+                            <td>{{ uc.endereco }}</td>
+                            <td>{{ dado.usinas.get(uc.id, 'Desconhecida') }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            <h4>Histórico de Consumo</h4>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Unidade Consumidora</th>
+                        <th>Mês/Ano</th>
+                        <th>Consumo (kWh)</th>
+                        <th>Crédito (R$)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for uc_id, consumos in dado.historico_consumo.items() %}
+                        {% for consumo in consumos %}
+                            <tr>
+                                <td>{{ (dado.unidades_consumidoras|selectattr('id', 'equalto', uc_id)|first).numero }}</td>
+                                <td>{{ consumo.data.strftime('%m/%Y') }}</td>
+                                <td>{{ consumo.consumo }}</td>
+                                <td>{{ consumo.credito if consumo.credito is not none else 0 }}</td>
+                            </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="4">Nenhum histórico de consumo encontrado.</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            <div class="total-energia">
+                <p>Total de Energia Necessária (com margem de segurança): {{ dado.total_energia_necessaria | round(6) }} kWh</p>
+            </div>
+        </div>
+    {% endfor %}
+</div>
+
+<p>
+    <a href="{{ url_for('admin_routes.cadastro_uc') }}">
+        <button class="nova_uc_button" type="button">Cadastrar Nova UC</button>
+    </a>
+</p>
+
+
+<h2 class="painel_energia">Painel de Energia</h1>
+
+<table>
+    <thead>
+        <tr>
+            <th>Usina</th>
+            <th>Capacidade Total (kWh)</th>
+            <th>Energia Disponível (kWh)</th>
+            <th>Total Consumido (kWh)</th>
+            <th>Percentual de Energia Utilizada (%)</th>
+            <th>Percentual de Energia Disponível (%)</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for usina in usinas %}
+            <tr>
+                <td>{{ usina.nome }}</td>
+                <td>{{ usina.capacidade_total }}</td>
+                <td>{{ usina.energia_disponivel }}</td>
+                <td>{{ usina.total_consumido }}</td>
+                <td>{{ usina.percentual_utilizado | round(2) }}</td>
+                <td>{{ usina.percentual_disponivel | round(2) }}</td>
+            </tr>
+        {% else %}
+            <tr>
+                <td colspan="6">Nenhuma usina encontrada.</td>
+            </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<h1>Gráfico de Consumo vs Geração de Energia</h1>
+    
+<canvas id="consumoGeracaoChart"></canvas>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    var ctx = document.getElementById('consumoGeracaoChart').getContext('2d');
+    var consumoGeracaoChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: {{ datas | tojson }},
+            datasets: [
+                {
+                    label: 'Consumo de Energia (kWh)',
+                    data: {{ consumo | tojson }},
+                    borderColor: 'rgb(75, 192, 192)',
+                    backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                    fill: false
+                },
+                {
+                    label: 'Geração de Energia (kWh)',
+                    data: {{ geracao | tojson }},
+                    borderColor: 'rgb(153, 102, 255)',
+                    backgroundColor: 'rgba(153, 102, 255, 0.2)',
+                    fill: false
+                }
+            ]
+        },
+        options: {
+            scales: {
+                x: {
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: 'Mês/Ano'
+                    }
+                },
+                y: {
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: 'kWh'
+                    }
+                }
+            }
+        }
+    });
+</script>
+
+{% endblock %}
+
